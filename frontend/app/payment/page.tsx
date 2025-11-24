@@ -73,27 +73,32 @@ function PaymentContent() {
       // Get email from sessionStorage if available
       const email = sessionStorage.getItem("userEmail") || ""
 
-      // Create payment intent using direct axios call (bypass auth interceptor)
-      const axios = (await import('axios')).default
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-      
-      console.log('Payment API URL:', apiUrl) // Debug log for AWS deployment
-      
-      const response = await axios.post(`${apiUrl}/api/payments/create-payment/`, {
-        amount: trackInfo.price,
-        currency: trackInfo.currency,
-        email: email,
-        metadata: {
-          track: track,
-          track_name: trackInfo.name
-        }
-      }, {
+      // Create payment intent using fetch with relative URL for Next.js proxy
+      const response = await fetch('/api/payments/create-payment/', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json"
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({
+          amount: trackInfo.price,
+          currency: trackInfo.currency,
+          email: email,
+          metadata: {
+            track: track,
+            track_name: trackInfo.name
+          }
+        })
       })
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment');
+      }
+      
+      const data = await response.json()
 
-      const { clientSecret, publishableKey } = response.data
+      const { clientSecret, publishableKey } = data
 
       // Initialize Stripe
       const stripe = await loadStripe(publishableKey)
@@ -101,13 +106,7 @@ function PaymentContent() {
       setClientSecret(clientSecret)
     } catch (err: any) {
       console.error("Payment initialization error:", err)
-      console.error("Error details:", {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        apiUrl: process.env.NEXT_PUBLIC_API_URL
-      })
-      setError(err.response?.data?.error || err.message || "Failed to initialize payment. Please check your connection.")
+      setError(err.message || "Failed to initialize payment. Please check your connection.")
     } finally {
       setLoading(false)
     }

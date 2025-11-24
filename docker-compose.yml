@@ -16,7 +16,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock  # Enable Docker-in-Docker for workspace provisioning
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${DB_PORT}/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/0
     env_file:
       - .env
     depends_on:
@@ -46,8 +46,8 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      # Set NEXT_PUBLIC_API_URL for client-side API calls
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Leave NEXT_PUBLIC_API_URL empty to use Next.js rewrites (proxies to backend)
+      - NEXT_PUBLIC_API_URL=
       - NEXT_PUBLIC_APP_NAME=ApraNova
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
       # Backend URL for Next.js server-side rewrites

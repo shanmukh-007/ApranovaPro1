@@ -358,10 +358,24 @@ def verify_checkout_session(request):
             )
         
         # Retrieve session from Stripe
-        session = stripe.checkout.Session.retrieve(session_id)
-        
         import logging
         logger = logging.getLogger(__name__)
+        
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+        except stripe.InvalidRequestError as e:
+            logger.error(f"Invalid Stripe session: {str(e)}")
+            return Response(
+                {"error": "Invalid or expired checkout session"}, 
+                status=http_status.HTTP_400_BAD_REQUEST
+            )
+        except stripe.StripeError as e:
+            logger.error(f"Stripe error: {str(e)}")
+            return Response(
+                {"error": "Failed to verify payment with Stripe"}, 
+                status=http_status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
         logger.info(f"Stripe session metadata: {session.metadata}")
         logger.info(f"Track from metadata: {session.metadata.get('track')}")
         

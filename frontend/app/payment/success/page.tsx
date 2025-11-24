@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, AlertCircle, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error' | 'pending'>('verifying');
@@ -27,9 +27,9 @@ export default function PaymentSuccessPage() {
 
   const verifyPayment = async (sessionId: string) => {
     try {
-      // Verify the checkout session
+      // Verify the checkout session - use relative URL for Next.js proxy
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/payments/verify-checkout-session/?session_id=${sessionId}`
+        `/api/payments/verify-checkout-session/?session_id=${sessionId}`
       );
 
       if (response.status === 202) {
@@ -53,21 +53,26 @@ export default function PaymentSuccessPage() {
       console.log('Track from response:', data.track);
       
       if (data.success) {
-        // Store payment info for signup
-        sessionStorage.setItem('payment_verified', 'true');
-        sessionStorage.setItem('payment_session_id', sessionId);
-        sessionStorage.setItem('selected_track', data.track || '');
-        sessionStorage.setItem('customer_email', data.customer_email || '');
+        // Store JWT tokens for auto-login
+        if (data.access) {
+          localStorage.setItem('access_token', data.access);
+        }
+        if (data.refresh) {
+          localStorage.setItem('refresh_token', data.refresh);
+        }
         
-        console.log('Stored track in sessionStorage:', data.track);
+        // Store user data
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
         
         setStatus('success');
-        setMessage('Payment successful! Please complete your account setup.');
+        setMessage('Payment successful! Redirecting to your dashboard...');
         
-        // Redirect to signup after 2 seconds
+        // Redirect to dashboard after 2 seconds
         setTimeout(() => {
-          console.log('Redirecting to signup with track:', data.track);
-          router.push(`/signup?track=${data.track || ''}&payment_verified=true`);
+          console.log('Redirecting to dashboard');
+          router.push('/student/dashboard');
         }, 2000);
       } else {
         throw new Error('Payment verification failed');
@@ -97,7 +102,7 @@ export default function PaymentSuccessPage() {
               <div className="mx-auto mb-4">
                 <CheckCircle className="w-16 h-16 text-green-600" />
               </div>
-              <CardTitle className="text-green-600">Payment Successful!</CardTitle>
+              <CardTitle className="text-green-600">Enrollment Complete!</CardTitle>
               <CardDescription>Redirecting you to complete your account setup...</CardDescription>
             </>
           ) : (
@@ -205,5 +210,24 @@ export default function PaymentSuccessPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
+            </div>
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

@@ -71,18 +71,17 @@ class ProjectSerializer(serializers.ModelSerializer):
             if has_progress:
                 return True
             
-            # For Project 1, check if it should be auto-unlocked
+            # For Project 1, auto-unlock for all students (regardless of payment status)
             if obj.number == 1:
-                # Auto-create progress for enrolled students
-                if request.user.enrollment_status == 'ENROLLED':
-                    from django.utils import timezone
-                    StudentProgress.objects.get_or_create(
-                        student=request.user,
-                        project=obj,
-                        step=None,
-                        defaults={'started_at': timezone.now()}
-                    )
-                    return True
+                # Auto-create progress for all authenticated students
+                from django.utils import timezone
+                StudentProgress.objects.get_or_create(
+                    student=request.user,
+                    project=obj,
+                    step=None,
+                    defaults={'started_at': timezone.now()}
+                )
+                return True
             
             # Check if previous project is approved
             previous_project = Project.objects.filter(

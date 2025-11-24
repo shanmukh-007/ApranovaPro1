@@ -52,7 +52,8 @@ export default function GetStartedPage() {
     
     try {
       // Stripe Checkout will collect email and name
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/create-simple-checkout/`, {
+      // Use relative URL to leverage Next.js proxy
+      const response = await fetch('/api/payments/create-simple-checkout/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -48,7 +48,7 @@ class StripeService:
             
             return customer.id
             
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to create Stripe customer: {str(e)}")
     
     @staticmethod
@@ -107,7 +107,7 @@ class StripeService:
                 'currency': currency,
             }
             
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to create payment intent: {str(e)}")
     
     @staticmethod
@@ -115,7 +115,7 @@ class StripeService:
         """Retrieve a payment intent from Stripe"""
         try:
             return stripe.PaymentIntent.retrieve(payment_intent_id)
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to retrieve payment intent: {str(e)}")
     
     @staticmethod
@@ -161,7 +161,7 @@ class StripeService:
                 'status': refund.status,
             }
             
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to create refund: {str(e)}")
     
     @staticmethod
@@ -172,7 +172,7 @@ class StripeService:
                 customer=customer_id,
                 type='card',
             )
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to retrieve payment methods: {str(e)}")
     
     @staticmethod
@@ -241,7 +241,7 @@ class StripeService:
                 'url': session.url,
             }
             
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to create checkout session: {str(e)}")
     
     @staticmethod
@@ -296,7 +296,7 @@ class StripeService:
                 'url': session.url,
             }
             
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to create checkout session: {str(e)}")
     
     @staticmethod
@@ -351,7 +351,7 @@ class StripeService:
                 'url': session.url,
             }
             
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             raise Exception(f"Failed to create checkout session: {str(e)}")
     
     @staticmethod
@@ -364,5 +364,5 @@ class StripeService:
             return event
         except ValueError:
             raise Exception("Invalid payload")
-        except stripe.error.SignatureVerificationError:
+        except stripe.SignatureVerificationError:
             raise Exception("Invalid signature")

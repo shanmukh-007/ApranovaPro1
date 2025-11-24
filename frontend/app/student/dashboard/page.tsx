@@ -162,9 +162,11 @@ export default function StudentDashboardPage() {
         const tracks = await curriculumApi.getTracks()
         const userTrackCode = profileResponse.data?.track
         
-        if (userTrackCode && tracks.length > 0) {
-          // Find the user's specific track - DO NOT default to tracks[0]
-          const userTrack = tracks.find(t => t.code === userTrackCode)
+        if (tracks.length > 0) {
+          // Find the user's specific track, or default to first track if no track assigned
+          const userTrack = userTrackCode 
+            ? tracks.find(t => t.code === userTrackCode) || tracks[0]
+            : tracks[0]
           
           if (userTrack) {
             setCurrentTrack(userTrack)
@@ -176,7 +178,7 @@ export default function StudentDashboardPage() {
               p => p.is_unlocked && p.progress_percentage < 100
             )
             
-            // If no active project, show first unlocked one
+            // If no active project, show first unlocked one, or just show first project
             const project = currentActiveProject || userTrack.projects.find(p => p.is_unlocked) || userTrack.projects[0]
             
             setCurrentProject(project)
@@ -185,7 +187,7 @@ export default function StudentDashboardPage() {
               fetchGithubCommits(project.github_repo_url)
             }
           } else {
-            console.error(`Track ${userTrackCode} not found in available tracks`)
+            console.error(`No tracks available`)
           }
         }
       } catch (error) {
@@ -266,7 +268,7 @@ export default function StudentDashboardPage() {
                   Complete your payment to unlock full access to the {userProfile.track === 'DP' ? 'Data Professional' : 'Full-Stack Developer'} track.
                 </div>
                 <Button asChild size="sm" className="mt-3 bg-amber-600 hover:bg-amber-700">
-                  <Link href="/payment">Complete Payment</Link>
+                  <Link href="/get-started">Complete Payment</Link>
                 </Button>
               </AlertDescription>
             </Alert>
@@ -303,7 +305,7 @@ export default function StudentDashboardPage() {
           )}
 
           {/* Journey Progress Overview */}
-          {userProfile.enrollment_status === 'ENROLLED' && userProfile.privacy_accepted && (
+          {userProfile.enrollment_status === 'ENROLLED' && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Track Info */}
               <Card className="border-2 border-cyan-200 dark:border-cyan-800 shadow-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30">

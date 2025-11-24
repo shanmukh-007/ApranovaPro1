@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testAPI()">Test Tracks API</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing...';
+            
+            try {
+                // Test 1: Check API URL
+                const apiUrl = 'http://localhost:8000/api/curriculum/tracks/';
+                output.textContent += `\nTesting: ${apiUrl}\n`;
+                
+                // Test 2: Fetch tracks
+                const response = await fetch(apiUrl, {
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                output.textContent += `\nStatus: ${response.status}\n`;
+                output.textContent += `Status Text: ${response.statusText}\n`;
+                
+                const data = await response.json();
+                output.textContent += `\nResponse:\n${JSON.stringify(data, null, 2)}`;
+                
+            } catch (error) {
+                output.textContent += `\nError: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

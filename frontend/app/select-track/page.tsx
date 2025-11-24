@@ -49,8 +49,8 @@ export default function SelectTrackPage() {
     if (selectedTrack) {
       // Store selected track in sessionStorage
       sessionStorage.setItem("selectedTrack", selectedTrack)
-      // Redirect to payment page with track parameter
-      router.push(`/payment?track=${selectedTrack}`)
+      // Redirect to get-started page (new enrollment flow)
+      router.push(`/get-started`)
     }
   }
 
