@@ -1,0 +1,60 @@
+{
+  "mcpServers": {
+    "aws-cli": {
+      "command": "uvx",
+      "args": ["mcp-server-aws-cli"],
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "AWS_PROFILE": "default"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "aws_cli_describe_*",
+        "aws_cli_list_*",
+        "aws_cli_get_*"
+      ]
+    },
+    "terraform": {
+      "command": "uvx",
+      "args": ["mcp-server-terraform"],
+      "env": {
+        "TF_WORKSPACE": "production"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "terraform_plan",
+        "terraform_validate",
+        "terraform_show"
+      ]
+    },
+    "docker": {
+      "command": "uvx",
+      "args": ["mcp-server-docker"],
+      "disabled": false,
+      "autoApprove": [
+        "docker_ps",
+        "docker_images",
+        "docker_logs"
+      ]
+    },
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-server-filesystem", "--allowed-directories", "."],
+      "disabled": false,
+      "autoApprove": [
+        "read_file",
+        "list_directory"
+      ]
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"],
+      "disabled": false,
+      "autoApprove": [
+        "git_status",
+        "git_log",
+        "git_diff"
+      ]
+    }
+  }
+}
