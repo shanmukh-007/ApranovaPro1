@@ -162,11 +162,9 @@ export default function StudentDashboardPage() {
         const tracks = await curriculumApi.getTracks()
         const userTrackCode = profileResponse.data?.track
         
-        if (tracks.length > 0) {
-          // Find the user's specific track, or default to first track if no track assigned
-          const userTrack = userTrackCode 
-            ? tracks.find(t => t.code === userTrackCode) || tracks[0]
-            : tracks[0]
+        if (userTrackCode && tracks.length > 0) {
+          // Find the user's specific track - DO NOT default to tracks[0]
+          const userTrack = tracks.find(t => t.code === userTrackCode)
           
           if (userTrack) {
             setCurrentTrack(userTrack)
@@ -178,7 +176,7 @@ export default function StudentDashboardPage() {
               p => p.is_unlocked && p.progress_percentage < 100
             )
             
-            // If no active project, show first unlocked one, or just show first project
+            // If no active project, show first unlocked one
             const project = currentActiveProject || userTrack.projects.find(p => p.is_unlocked) || userTrack.projects[0]
             
             setCurrentProject(project)
@@ -187,7 +185,7 @@ export default function StudentDashboardPage() {
               fetchGithubCommits(project.github_repo_url)
             }
           } else {
-            console.error(`No tracks available`)
+            console.error(`Track ${userTrackCode} not found in available tracks`)
           }
         }
       } catch (error) {
@@ -305,7 +303,7 @@ export default function StudentDashboardPage() {
           )}
 
           {/* Journey Progress Overview */}
-          {userProfile.enrollment_status === 'ENROLLED' && (
+          {userProfile.enrollment_status === 'ENROLLED' && userProfile.privacy_accepted && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Track Info */}
               <Card className="border-2 border-cyan-200 dark:border-cyan-800 shadow-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30">
