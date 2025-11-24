@@ -53,3 +53,18 @@ export async function startProject(projectId: number): Promise<StartProjectRespo
   const response = await apiClient.post(`/curriculum/projects/${projectId}/start_project/`)
   return response.data
 }
+
+/**
+ * Check if project repo exists
+ */
+export async function checkProjectRepo(projectId: number): Promise<{ has_repo: boolean; repo_url?: string }> {
+  try {
+    const response = await apiClient.get(`/curriculum/projects/${projectId}/`)
+    return {
+      has_repo: !!response.data.github_repo_url,
+      repo_url: response.data.github_repo_url
+    }
+  } catch (error) {
+    return { has_repo: false }
+  }
+}

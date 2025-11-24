@@ -73,8 +73,18 @@ def _create_user_from_payment(payment_intent, payment):
     
     logger.info(f"Created user account for {email}")
     
-    # TODO: Send welcome email with password
-    # send_welcome_email(user, password)
+    # Send welcome email with password
+    from utils.email import send_welcome_email
+    send_welcome_email(user, password)
+    
+    # Auto-assign trainer based on track
+    try:
+        from utils.trainer_assignment import assign_trainer_to_student
+        trainer = assign_trainer_to_student(user)
+        if trainer:
+            logger.info(f"Auto-assigned trainer {trainer.email} to student {user.email}")
+    except Exception as e:
+        logger.error(f"Failed to assign trainer: {str(e)}")
     
     return user
 
@@ -350,11 +360,20 @@ def verify_checkout_session(request):
         # Retrieve session from Stripe
         session = stripe.checkout.Session.retrieve(session_id)
         
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Stripe session metadata: {session.metadata}")
+        logger.info(f"Track from metadata: {session.metadata.get('track')}")
+        
         if session.payment_status != 'paid':
             return Response(
                 {"error": "Payment not completed"}, 
                 status=http_status.HTTP_400_BAD_REQUEST
             )
+        
+        # Get track from session metadata
+        track = session.metadata.get('track')
+        logger.info(f"Using track: {track}")
         
         # Get user by email from customer_details (Stripe collects this)
         email = None
@@ -369,20 +388,105 @@ def verify_checkout_session(request):
                 status=http_status.HTTP_400_BAD_REQUEST
             )
         
+        # Get customer email for response
+        customer_email = email
+        
         # Find user
         from django.contrib.auth import get_user_model
+        from django.utils import timezone
         User = get_user_model()
         
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response(
-                {
-                    "error": "Account not created yet",
-                    "message": "Your account is being set up. Please wait a moment and refresh."
-                }, 
-                status=http_status.HTTP_202_ACCEPTED
+            # Create user account if it doesn't exist (for development without webhooks)
+            from django.utils.crypto import get_random_string
+            
+            customer_name = session.customer_details.get('name', 'Student')
+            username = email.split('@')[0]
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+            
+            password = get_random_string(16)
+            
+            user = User.objects.create_user(
+                email=email,
+                username=username,
+                password=password,
+                name=customer_name,
+                role='student',
+                track=track,
+                enrollment_status='ENROLLED',
+                payment_verified=True,
+                enrolled_at=timezone.now(),
+                privacy_accepted=True,
+                privacy_accepted_at=timezone.now(),
+                privacy_version='1.0',
             )
+            
+            logger.info(f"Created user account for {email} via verify endpoint")
+            
+            # Auto-assign trainer based on track
+            try:
+                from utils.trainer_assignment import assign_trainer_to_student
+                trainer = assign_trainer_to_student(user)
+                if trainer:
+                    logger.info(f"Auto-assigned trainer {trainer.email} to student {user.email}")
+            except Exception as e:
+                logger.error(f"Failed to assign trainer: {str(e)}")
+            
+            # Send welcome email
+            try:
+                from utils.email import send_welcome_email
+                send_welcome_email(user, password)
+            except Exception as e:
+                logger.error(f"Failed to send welcome email: {str(e)}")
+            
+            # Send Discord notification
+            try:
+                from utils.discord import send_discord_notification
+                send_discord_notification(
+                    title="💰 New Enrollment",
+                    description=f"**{user.name}** enrolled in **{track}** track",
+                    fields=[
+                        {"name": "Email", "value": user.email, "inline": True},
+                        {"name": "Amount", "value": f"${session.amount_total / 100}", "inline": True},
+                    ],
+                    color=0x10b981
+                )
+            except Exception as e:
+                logger.error(f"Failed to send Discord notification: {str(e)}")
+            
+            # Unlock first project
+            if user.track:
+                try:
+                    from curriculum.models import Track, StudentProgress
+                    track_obj = Track.objects.get(code=user.track)
+                    first_project = track_obj.projects.filter(number=1).first()
+                    
+                    if first_project:
+                        # Create progress entry for first project (unlocks it)
+                        StudentProgress.objects.get_or_create(
+                            student=user,
+                            project=first_project,
+                            step=None,
+                            defaults={'started_at': timezone.now()}
+                        )
+                        
+                        # Create progress entries for all steps
+                        for step in first_project.steps.all():
+                            StudentProgress.objects.get_or_create(
+                                student=user,
+                                project=first_project,
+                                step=step
+                            )
+                        
+                        logger.info(f"Unlocked Project 1 for user {user.email}")
+                except Exception as e:
+                    logger.error(f"Failed to unlock Project 1: {str(e)}")
         
         # Generate JWT tokens
         from rest_framework_simplejwt.tokens import RefreshToken
@@ -397,7 +501,8 @@ def verify_checkout_session(request):
             "user": user_data,
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "track": user.track,
+            "track": track or user.track,  # Use track from session metadata first
+            "customer_email": customer_email,
             "tools_provisioned": user.tools_provisioned,
             "workspace_url": user.workspace_url,
             "superset_url": user.superset_url,
@@ -557,6 +662,16 @@ def stripe_webhook(request):
             
             user.save()
             
+            # Auto-assign trainer based on track
+            if not user.assigned_trainer:
+                try:
+                    from utils.trainer_assignment import assign_trainer_to_student
+                    trainer = assign_trainer_to_student(user)
+                    if trainer:
+                        logger.info(f"Auto-assigned trainer {trainer.email} to student {user.email}")
+                except Exception as e:
+                    logger.error(f"Failed to assign trainer: {str(e)}")
+            
             # Log enrollment
             log_audit(
                 user, 
@@ -607,8 +722,29 @@ def stripe_webhook(request):
                 except Track.DoesNotExist:
                     logger.error(f"Track {user.track} not found for user {user.email}")
             
-            # TODO: Send welcome email with credentials
-            # TODO: Notify admin via Slack
+            # Send welcome email (for existing users) and payment confirmation
+            from utils.email import send_welcome_email, send_payment_confirmation_email
+            if not is_anonymous:
+                # Existing user - just send payment confirmation
+                send_payment_confirmation_email(user, payment)
+            # For anonymous users, welcome email was already sent in _create_user_from_payment
+            
+            # Send Discord notification
+            try:
+                from utils.discord import send_discord_notification
+                send_discord_notification(
+                    title="💰 New Enrollment",
+                    description=f"**{user.name or user.username}** enrolled in **{track_code}** track",
+                    fields=[
+                        {"name": "Email", "value": user.email, "inline": True},
+                        {"name": "Amount", "value": f"${payment.amount}", "inline": True},
+                        {"name": "Payment ID", "value": payment.stripe_payment_intent[:20] + "...", "inline": False}
+                    ],
+                    color=0x10b981  # Green
+                )
+            except Exception as e:
+                logger.error(f"Failed to send Discord notification: {str(e)}")
+            
             logger.info(f"Payment succeeded for user {user.email}, enrolled in {track_code}")
     
     # Handle payment_intent.payment_failed
@@ -623,8 +759,13 @@ def stripe_webhook(request):
             payment.status = 'FAILED'
             payment.save()
             
-            logger.warning(f"Payment failed for user {payment.user.email}")
-            # TODO: Send failure notification email
+            logger.warning(f"Payment failed for user {payment.user.email if payment.user else payment.customer_email}")
+            
+            # Send failure notification email
+            from utils.email import send_payment_failed_email
+            email = payment.user.email if payment.user else payment.customer_email
+            if email:
+                send_payment_failed_email(email, payment.amount, payment.track)
     
     # Handle charge.refunded
     elif event['type'] == 'charge.refunded':
@@ -654,6 +795,10 @@ def stripe_webhook(request):
                     'Enrollment refunded',
                     {'payment_intent_id': payment_intent_id, 'refund_amount': payment.refund_amount}
                 )
+                
+                # Send refund notification email
+                from utils.email import send_refund_notification_email
+                send_refund_notification_email(user, payment)
                 
                 logger.info(f"Refund processed for user {user.email}")
     
@@ -759,7 +904,34 @@ def stripe_webhook(request):
                             {'session_id': session['id'], 'amount': session['amount_total'] / 100}
                         )
                         
-                        # TODO: Send welcome email with password
+                        # Auto-assign trainer based on track
+                        try:
+                            from utils.trainer_assignment import assign_trainer_to_student
+                            trainer = assign_trainer_to_student(user)
+                            if trainer:
+                                logger.info(f"Auto-assigned trainer {trainer.email} to student {user.email}")
+                        except Exception as e:
+                            logger.error(f"Failed to assign trainer: {str(e)}")
+                        
+                        # Send welcome email with password
+                        from utils.email import send_welcome_email
+                        send_welcome_email(user, password)
+                        
+                        # Send Discord notification
+                        try:
+                            from utils.discord import send_discord_notification
+                            send_discord_notification(
+                                title="💰 New Enrollment (Checkout)",
+                                description=f"**{user.name or user.username}** enrolled in **{track}** track",
+                                fields=[
+                                    {"name": "Email", "value": user.email, "inline": True},
+                                    {"name": "Amount", "value": f"${session['amount_total'] / 100}", "inline": True},
+                                    {"name": "Session ID", "value": session['id'][:20] + "...", "inline": False}
+                                ],
+                                color=0x10b981  # Green
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to send Discord notification: {str(e)}")
                         
                 except Exception as e:
                     logger.error(f"Failed to create account from checkout: {str(e)}")

@@ -36,8 +36,10 @@ echo "🗄️  Creating cache table..."
 python manage.py createcachetable || true
 
 # Populate curriculum data
-echo "📚 Populating curriculum data..."
-python manage.py populate_curriculum || true
+echo "📚 Setting up curriculum for both tracks..."
+python setup_dp_curriculum.py || echo "⚠️  DP curriculum setup failed"
+python setup_fsd_curriculum.py || echo "⚠️  FSD curriculum setup failed"
+echo "✅ Curriculum setup complete"
 
 # Create superuser if it doesn't exist
 echo "👤 Creating superuser..."

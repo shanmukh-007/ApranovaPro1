@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import ToolCard from "@/components/student/tool-card"
+import GitWorkflowGuide from "@/components/student/git-workflow-guide"
+import { startProject } from "@/lib/github-api"
+import { useToast } from "@/hooks/use-toast"
 import {
   ArrowLeft,
   CheckCircle2,
@@ -23,6 +26,8 @@ import {
   BarChart3,
   Code,
   Loader2,
+  CreditCard,
+  Rocket,
 } from "lucide-react"
 import { curriculumApi, type Project } from "@/lib/curriculum-api"
 import apiClient from "@/lib/apiClient"
@@ -31,6 +36,7 @@ export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
   const projectId = params.id as string
+  const { toast } = useToast()
   
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,6 +45,9 @@ export default function ProjectDetailPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submissions, setSubmissions] = useState<Record<string, any>>({})
+  const [startingProject, setStartingProject] = useState(false)
+  const [startProjectError, setStartProjectError] = useState<string | null>(null)
+  const [githubConnected, setGithubConnected] = useState(false)
 
   const handleInputChange = (deliverableId: string, field: string, value: string) => {
     setSubmissions(prev => ({
@@ -82,6 +91,44 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const handleStartProject = async () => {
+    setStartingProject(true)
+    setStartProjectError(null)
+    
+    try {
+      const result = await startProject(parseInt(projectId))
+      
+      if (result.success) {
+        toast({
+          title: "Repository Created!",
+          description: result.already_exists 
+            ? "Your repository already exists." 
+            : "Your GitHub repository has been created successfully.",
+        })
+        
+        // Refresh project data to get new repo URL
+        window.location.reload()
+      } else {
+        setStartProjectError(result.error || "Failed to create repository")
+        toast({
+          title: "Error",
+          description: result.error || "Failed to create repository",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || "Failed to start project"
+      setStartProjectError(errorMsg)
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      })
+    } finally {
+      setStartingProject(false)
+    }
+  }
+
   useEffect(() => {
     async function fetchProject() {
       try {
@@ -91,6 +138,7 @@ export default function ProjectDetailPage() {
         ])
         
         setUserProfile(profileResponse.data)
+        setGithubConnected(profileResponse.data.github_connected || false)
         
         // Find the project across all tracks
         for (const track of tracks) {
@@ -244,7 +292,42 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            {/* Start Project Button - For both FSD and DP tracks without repo */}
+            {userProfile && (userProfile.track === 'FSD' || userProfile.track === 'DP') && !project.github_repo_url && (
+              <>
+                {!githubConnected ? (
+                  <Button 
+                    asChild
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  >
+                    <Link href="/student/settings">
+                      <Github className="mr-2 h-4 w-4" />
+                      Connect GitHub First
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleStartProject}
+                    disabled={startingProject}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                  >
+                    {startingProject ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Repository...
+                      </>
+                    ) : (
+                      <>
+                        <Rocket className="mr-2 h-4 w-4" />
+                        Start Project
+                      </>
+                    )}
+                  </Button>
+                )}
+              </>
+            )}
+            
             {project.github_repo_url && (
               <Button asChild variant="outline">
                 <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer">
@@ -253,7 +336,7 @@ export default function ProjectDetailPage() {
                 </a>
               </Button>
             )}
-            <Button asChild>
+            <Button asChild variant="outline">
               <Link href="/student/project-guide">
                 <BookOpen className="mr-2 h-4 w-4" />
                 View Guide
@@ -268,6 +351,27 @@ export default function ProjectDetailPage() {
               </Button>
             )}
           </div>
+          
+          {/* GitHub Connection Required Alert */}
+          {userProfile && (userProfile.track === 'FSD' || userProfile.track === 'DP') && !project.github_repo_url && !githubConnected && (
+            <Alert>
+              <Github className="h-4 w-4" />
+              <AlertDescription>
+                <p className="font-semibold mb-1">GitHub Connection Required</p>
+                <p className="text-sm">
+                  You need to connect your GitHub account before starting this project. 
+                  Click the "Connect GitHub First" button above to get started.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Start Project Error */}
+          {startProjectError && (
+            <Alert variant="destructive">
+              <AlertDescription>{startProjectError}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
@@ -321,6 +425,40 @@ export default function ProjectDetailPage() {
               status="active"
               color="cyan"
             />
+
+            {/* Project 2 Specific Tools */}
+            {project?.number === 2 && (
+              <ToolCard
+                icon={<Code className="w-6 h-6" />}
+                title="Prefect Cloud"
+                description="Orchestrate and monitor your ETL pipeline"
+                url="https://app.prefect.cloud"
+                status="active"
+                color="purple"
+              />
+            )}
+
+            {/* Project 3 Specific Tools */}
+            {project?.number === 3 && (
+              <>
+                <ToolCard
+                  icon={<Database className="w-6 h-6" />}
+                  title="BigQuery Console"
+                  description="Cloud data warehouse for analytics"
+                  url="https://console.cloud.google.com/bigquery"
+                  status="active"
+                  color="blue"
+                />
+                <ToolCard
+                  icon={<BarChart3 className="w-6 h-6" />}
+                  title="Looker Studio"
+                  description="Build production-grade dashboards"
+                  url="https://lookerstudio.google.com"
+                  status="active"
+                  color="teal"
+                />
+              </>
+            )}
           </CardContent>
         </Card>
       )}
@@ -333,18 +471,82 @@ export default function ProjectDetailPage() {
               <Code className="h-5 w-5" />
               Project Tools & Resources
             </CardTitle>
-            <CardDescription>Access your development environment</CardDescription>
+            <CardDescription>Access your development environment and deployment tools</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Workspace / Code Server */}
             <ToolCard
               icon={<Code className="w-6 h-6" />}
-              title="Cloud IDE"
-              description="VS Code in your browser for full-stack development"
+              title="VS Code Server"
+              description="Build responsive portfolio with React & Tailwind"
               url={userProfile.workspace_url || "http://localhost:8080"}
               status={userProfile.tools_provisioned ? 'active' : 'provisioning'}
               color="blue"
             />
+
+            {/* Project 1 Specific Tools */}
+            {project?.number === 1 && (
+              <ToolCard
+                icon={<ExternalLink className="w-6 h-6" />}
+                title="Netlify CLI"
+                description="Deploy portfolio website (free hosting)"
+                url="https://app.netlify.com"
+                status="active"
+                color="cyan"
+              />
+            )}
+
+            {/* Project 2 Specific Tools */}
+            {project?.number === 2 && (
+              <>
+                <ToolCard
+                  icon={<Database className="w-6 h-6" />}
+                  title="PostgreSQL Database"
+                  description="Database for e-commerce platform"
+                  url="http://localhost:5432"
+                  status="active"
+                  color="blue"
+                />
+                <ToolCard
+                  icon={<CreditCard className="w-6 h-6" />}
+                  title="Stripe Dashboard"
+                  description="Payment integration and testing"
+                  url="https://dashboard.stripe.com/test/dashboard"
+                  status="active"
+                  color="purple"
+                />
+              </>
+            )}
+
+            {/* Project 3 Specific Tools */}
+            {project?.number === 3 && (
+              <>
+                <ToolCard
+                  icon={<Database className="w-6 h-6" />}
+                  title="Redis Cache"
+                  description="Real-time pub/sub and caching"
+                  url="http://localhost:6379"
+                  status="active"
+                  color="red"
+                />
+                <ToolCard
+                  icon={<Code className="w-6 h-6" />}
+                  title="Docker Desktop"
+                  description="Container management and deployment"
+                  url="http://localhost:2375"
+                  status="active"
+                  color="blue"
+                />
+                <ToolCard
+                  icon={<ExternalLink className="w-6 h-6" />}
+                  title="AWS Console"
+                  description="Cloud deployment and infrastructure"
+                  url="https://console.aws.amazon.com"
+                  status="active"
+                  color="orange"
+                />
+              </>
+            )}
 
             {/* GitHub */}
             {project?.github_repo_url && (
@@ -359,6 +561,17 @@ export default function ProjectDetailPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Git Workflow Guide - Only for FSD track */}
+      {userProfile && userProfile.track === 'FSD' && (
+        <GitWorkflowGuide
+          repoUrl={project?.github_repo_url}
+          hasRepo={!!project?.github_repo_url}
+          hasPR={false}
+          isApproved={false}
+          isMerged={false}
+        />
       )}
 
       {/* Project Steps */}

@@ -3,9 +3,9 @@ from .models import ProjectSubmission
 
 
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
-    student_name = serializers.CharField(source='student.name', read_only=True)
-    student_email = serializers.CharField(source='student.email', read_only=True)
-    reviewer_name = serializers.CharField(source='reviewed_by.name', read_only=True, allow_null=True)
+    student_name = serializers.SerializerMethodField()
+    student_email = serializers.SerializerMethodField()
+    reviewer_name = serializers.SerializerMethodField()
     
     class Meta:
         model = ProjectSubmission
@@ -31,6 +31,19 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['student', 'submitted_at', 'reviewed_at', 'reviewed_by']
+    
+    def get_student_name(self, obj):
+        if obj.student:
+            return obj.student.name or obj.student.username
+        return 'Unknown'
+    
+    def get_student_email(self, obj):
+        return obj.student.email if obj.student else 'N/A'
+    
+    def get_reviewer_name(self, obj):
+        if obj.reviewed_by:
+            return obj.reviewed_by.name or obj.reviewed_by.username
+        return None
 
 
 class SubmissionCreateSerializer(serializers.ModelSerializer):

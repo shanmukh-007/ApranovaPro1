@@ -35,6 +35,11 @@ fi
 echo "Collecting static files..."
 python manage.py collectstatic --noinput || true
 
+# Setup curriculum
+echo "Setting up curriculum..."
+python setup_dp_curriculum.py || echo "⚠️  DP curriculum setup failed"
+python setup_fsd_curriculum.py || echo "⚠️  FSD curriculum setup failed"
+
 echo "✅ Initialization complete!"
 echo "============================================"
 echo ""

@@ -50,6 +50,9 @@ SLACK_WEBHOOK_URL = config("SLACK_WEBHOOK_URL", default="")
 SLACK_BOT_TOKEN = config("SLACK_BOT_TOKEN", default="")
 SLACK_ENABLED = config("SLACK_ENABLED", default=False, cast=bool)
 
+# Discord Settings
+DISCORD_WEBHOOK_URL = config("DISCORD_WEBHOOK_URL", default="")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -100,6 +103,8 @@ INSTALLED_APPS = [
     "quizzes",
     "compliance",
     "submissions",
+    "support",  # Support ticket system
+    "live_sessions",  # Live class sessions
     # stripe
     "payments",
 ]

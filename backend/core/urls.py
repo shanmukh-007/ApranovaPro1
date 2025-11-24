@@ -125,5 +125,7 @@ urlpatterns = [
     path("api/curriculum/", include("curriculum.urls")),
     path("api/quiz/", include("quizzes.urls")),
     path("api/compliance/", include("compliance.urls")),
+    path("api/support/", include("support.urls")),
     path("api/submissions/", include("submissions.urls")),
+    path("api/", include("live_sessions.urls")),
 ]

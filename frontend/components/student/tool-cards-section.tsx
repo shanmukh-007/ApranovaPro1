@@ -124,8 +124,8 @@ export default function ToolCardsSection({
                   icon={<Code className="w-6 h-6" />}
                   title="VS Code Server"
                   description="Build responsive portfolio with React & Tailwind"
-                  url={workspaceUrl || 'http://localhost:8080'}
-                  status={workspaceUrl ? 'active' : 'provisioning'}
+                  url={'http://localhost:8080'}
+                  status='active'
                   color="blue"
                 />
 
@@ -151,8 +151,8 @@ export default function ToolCardsSection({
                   icon={<Code className="w-6 h-6" />}
                   title="VS Code Server"
                   description="Build e-commerce platform with React"
-                  url={workspaceUrl || 'http://localhost:8080'}
-                  status={workspaceUrl ? 'active' : 'provisioning'}
+                  url={'http://localhost:8080'}
+                  status='active'
                   color="blue"
                 />
 
@@ -189,8 +189,8 @@ export default function ToolCardsSection({
                   icon={<Code className="w-6 h-6" />}
                   title="VS Code Server"
                   description="Build social dashboard with real-time features"
-                  url={workspaceUrl || 'http://localhost:8080'}
-                  status={workspaceUrl ? 'active' : 'provisioning'}
+                  url={'http://localhost:8080'}
+                  status='active'
                   color="blue"
                 />
 

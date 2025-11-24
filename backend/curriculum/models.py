@@ -130,6 +130,20 @@ class StudentProgress(models.Model):
     github_pr_merged = models.BooleanField(default=False)
     started_at = models.DateTimeField(null=True, blank=True)
     
+    # Approval fields for sequential project flow
+    is_approved = models.BooleanField(default=False, help_text='Trainer has approved this project')
+    approved_at = models.DateTimeField(null=True, blank=True, help_text='When the project was approved')
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_student_projects',
+        help_text='Trainer who approved this project'
+    )
+    needs_revision = models.BooleanField(default=False, help_text='Project needs revision before approval')
+    trainer_feedback = models.TextField(blank=True, help_text='Feedback from trainer')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

@@ -48,6 +48,8 @@ export default function GetStartedPage() {
     setLoading(true);
     setError('');
     
+    console.log('Creating checkout for track:', trackCode);
+    
     try {
       // Stripe Checkout will collect email and name
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/create-simple-checkout/`, {
@@ -61,6 +63,8 @@ export default function GetStartedPage() {
           cancel_url: `${window.location.origin}/get-started`
         })
       });
+      
+      console.log('Checkout request sent with track:', trackCode);
 
       if (!response.ok) {
         const errorData = await response.json();

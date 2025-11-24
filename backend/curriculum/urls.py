@@ -1,6 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TrackViewSet, ProjectViewSet, StudentProgressViewSet, SubmissionViewSet
+from .views import (
+    TrackViewSet, ProjectViewSet, StudentProgressViewSet, SubmissionViewSet,
+    get_current_project, approve_project_submission, request_revision
+)
 from .webhook_views import github_webhook
 
 router = DefaultRouter()
@@ -13,4 +16,8 @@ urlpatterns = [
     path('', include(router.urls)),
     path('webhooks/github/', github_webhook, name='github-webhook'),
     path('webhooks/github', github_webhook, name='github-webhook-no-slash'),
+    # Sequential project flow endpoints
+    path('current-project/', get_current_project, name='current-project'),
+    path('submissions/<int:submission_id>/approve/', approve_project_submission, name='approve-submission'),
+    path('submissions/<int:submission_id>/request-revision/', request_revision, name='request-revision'),
 ]

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 const items = [
   { href: "/student/dashboard", label: "Dashboard" },
   { href: "/student/project-guide", label: "Project Guide" },
+  { href: "/student/sessions", label: "Live Sessions" },
   { href: "/student/quizzes", label: "Take Quizzes" },
   { href: "/student/submissions", label: "My Submissions" },
   { href: "/student/workspace", label: "Launch Workspace" },
@@ -27,17 +28,24 @@ const quickActions = [
     color: "neutral"
   },
   { 
+    title: "Live Sessions", 
+    description: "Join classes with trainer",
+    href: "/student/sessions",
+    color: "green",
+    icon: "📹"
+  },
+  { 
     title: "Submit Project", 
     description: "Upload your work",
     href: "/student/submit",
     color: "neutral"
   },
   { 
-    title: "Discord Community", 
-    description: "Connect with peers",
-    href: "https://discord.gg/apranova",
+    title: "Support Tickets", 
+    description: "Ask doubts & get support",
+    href: "/student/support",
     color: "neutral",
-    external: true
+    external: false
   },
 ]
 
@@ -62,13 +70,18 @@ export default function Sidebar() {
                 ? { href: action.href, target: "_blank", rel: "noopener noreferrer" }
                 : { href: action.href }
               
+              const bgColor = action.color === 'green' 
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
+                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+              
               return (
                 <Component
                   key={action.href}
                   {...linkProps}
-                  className="block p-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:shadow-md"
+                  className={`block p-3 rounded-lg border-2 transition-all hover:shadow-md ${bgColor}`}
                 >
-                  <div className="font-semibold text-sm mb-0.5 text-foreground">
+                  <div className="font-semibold text-sm mb-0.5 text-foreground flex items-center gap-2">
+                    {action.icon && <span>{action.icon}</span>}
                     {action.title}
                   </div>
                   <div className="text-xs text-muted-foreground">

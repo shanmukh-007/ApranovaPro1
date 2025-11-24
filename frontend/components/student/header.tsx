@@ -23,7 +23,7 @@ const tabs = [
   { href: "/student/project-guide", label: "Project Guide" },
   { href: "/student/quizzes", label: "Quizzes" },
   { href: "/student/submit", label: "Submit" },
-  { href: "/student/help", label: "Help" },
+  { href: "/student/support", label: "Tickets" },
 ]
 
 export default function Header() {
@@ -40,12 +40,17 @@ export default function Header() {
           setUserName(response.data.name || response.data.username || "Student")
           setUserEmail(response.data.email || "")
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch user profile:", error)
+        // If 401 Unauthorized, redirect to login
+        if (error.response?.status === 401) {
+          clearTokens()
+          router.push("/login")
+        }
       }
     }
     fetchUserProfile()
-  }, [])
+  }, [router])
 
   const handleLogout = async () => {
     const refreshToken = getRefreshToken();

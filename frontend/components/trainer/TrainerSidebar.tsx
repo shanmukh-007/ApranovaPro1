@@ -3,12 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, FileText, Calendar, Settings, Award } from "lucide-react"
+import { LayoutDashboard, Users, FileText, Calendar, Settings, Award, Video } from "lucide-react"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 const items = [
   { href: "/trainer/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/trainer/students", label: "Students", icon: Users },
+  { href: "/trainer/sessions", label: "Live Sessions", icon: Video },
   { href: "/trainer/quizzes", label: "AI Quizzes", icon: Award },
   { href: "/trainer/submissions", label: "Submissions", icon: FileText },
   { href: "/trainer/schedule", label: "Schedule", icon: Calendar },

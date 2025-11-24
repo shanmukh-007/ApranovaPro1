@@ -47,12 +47,16 @@ export default function SubmissionsQueue() {
   const fetchSubmissions = async () => {
     try {
       // Fetch from new submissions API
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token')
       const response = await fetch('/api/submissions/', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       })
-      if (!response.ok) throw new Error('Failed to fetch')
+      if (!response.ok) {
+        console.error('Fetch failed:', response.status, response.statusText)
+        throw new Error('Failed to fetch')
+      }
       const data = await response.json()
       
       // Transform to match expected format
@@ -74,7 +78,10 @@ export default function SubmissionsQueue() {
       setSubmissions(transformedData)
     } catch (error) {
       console.error("Failed to fetch submissions:", error)
-      toast({ title: "Error", description: "Failed to load submissions", variant: "destructive" })
+      // Only show error toast if it's not a 401 (unauthorized) or if we're not already showing empty state
+      if (error instanceof Error && !error.message.includes('401')) {
+        toast({ title: "Error", description: "Failed to load submissions", variant: "destructive" })
+      }
     } finally {
       setLoading(false)
     }

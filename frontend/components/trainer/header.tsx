@@ -22,9 +22,10 @@ import { User, LogOut, Settings } from "lucide-react"
 const tabs = [
   { href: "/trainer/dashboard", label: "Dashboard" },
   { href: "/trainer/students", label: "My Students" },
+  { href: "/trainer/sessions", label: "Live Sessions" },
   { href: "/trainer/submissions", label: "Submissions" },
+  { href: "/trainer/support", label: "Support" },
   { href: "/trainer/quizzes", label: "Quizzes" },
-  { href: "/trainer/schedule", label: "Schedule" },
 ]
 
 export default function TrainerHeader() {
@@ -41,12 +42,17 @@ export default function TrainerHeader() {
           setUserName(response.data.name || response.data.username || "Trainer")
           setUserEmail(response.data.email || "")
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch user profile:", error)
+        // If 401 Unauthorized, redirect to login
+        if (error.response?.status === 401) {
+          clearTokens()
+          router.push("/login")
+        }
       }
     }
     fetchUserProfile()
-  }, [])
+  }, [router])
 
   const handleLogout = async () => {
     const refreshToken = getRefreshToken();

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, workspace_views, github_views
+from . import views, workspace_views, github_views, trainer_views
 
 urlpatterns = [
     path("profile/", views.get_user_profile, name="user-profile"),
@@ -32,4 +32,14 @@ urlpatterns = [
     # Database credentials (DP track)
     path("db-credentials/", views.get_db_credentials, name="db-credentials"),
     path("db-credentials", views.get_db_credentials, name="db-credentials-no-slash"),
+    
+    # Trainer management
+    path("trainers/capacity/", trainer_views.get_trainer_capacity, name="trainer-capacity"),
+    path("trainers/capacity", trainer_views.get_trainer_capacity, name="trainer-capacity-no-slash"),
+    path("trainers/my-students/", trainer_views.get_my_students, name="trainer-my-students"),
+    path("trainers/my-students", trainer_views.get_my_students, name="trainer-my-students-no-slash"),
+    path("trainers/reassign/", trainer_views.reassign_student, name="reassign-student"),
+    path("trainers/reassign", trainer_views.reassign_student, name="reassign-student-no-slash"),
+    path("trainers/assign-all/", trainer_views.assign_unassigned_students, name="assign-all-students"),
+    path("trainers/assign-all", trainer_views.assign_unassigned_students, name="assign-all-students-no-slash"),
 ]

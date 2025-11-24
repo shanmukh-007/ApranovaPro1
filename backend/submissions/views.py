@@ -13,8 +13,21 @@ def submission_list_create(request):
     """List all submissions for the current user or create a new one"""
     
     if request.method == 'GET':
-        # Get all submissions for the current user
-        submissions = ProjectSubmission.objects.filter(student=request.user)
+        # Trainers see submissions from their assigned students
+        if request.user.role == 'trainer':
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            # Get all students assigned to this trainer
+            student_ids = User.objects.filter(
+                assigned_trainer=request.user,
+                role='student'
+            ).values_list('id', flat=True)
+            
+            submissions = ProjectSubmission.objects.filter(student_id__in=student_ids)
+        else:
+            # Students see only their own submissions
+            submissions = ProjectSubmission.objects.filter(student=request.user)
         
         # Optional filters
         project_id = request.query_params.get('project_id')

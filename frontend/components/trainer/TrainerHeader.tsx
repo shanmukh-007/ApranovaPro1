@@ -72,21 +72,10 @@ export function TrainerHeader({ activeTab, onTabChange, trainerName: propTrainer
   return (
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4">
-        <Link href="/trainer/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <Image 
-            src="/apra-nova-logo.png" 
-            alt="Apra Nova logo" 
-            width={32} 
-            height={32} 
-            className="rounded object-contain"
-            priority
-          />
-          <span className="font-semibold text-lg tracking-tight">Apra Nova</span>
-        </Link>
-        <div className="flex items-center gap-3 ml-4">
+        <Link href="/trainer/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <GraduationCap className="size-6 text-primary" />
           <span className="text-lg font-semibold">Apra Nova • Trainer</span>
-        </div>
+        </Link>
         
         <nav className="flex items-center gap-2">
           {tabs.map((tab) => (
@@ -110,7 +99,6 @@ export function TrainerHeader({ activeTab, onTabChange, trainerName: propTrainer
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src="/placeholder-trainer.png" alt={trainerName} />
                   <AvatarFallback>{trainerName.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Button>

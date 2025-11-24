@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import AutoSaveIndicator from "@/components/student/auto-save-indicator"
-import ToolCardsSection from "@/components/student/tool-cards-section"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -129,11 +128,8 @@ export default function StudentDashboardPage() {
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        // Fetch profile and tracks in parallel for faster loading
-        const [profileResponse, tracks] = await Promise.all([
-          apiClient.get("/users/profile"),
-          curriculumApi.getTracks()
-        ])
+        // Fetch profile first
+        const profileResponse = await apiClient.get("/users/profile")
         
         // Store complete user profile
         setUserProfile(profileResponse.data)
@@ -162,33 +158,34 @@ export default function StudentDashboardPage() {
           })
         }
 
-        // Process curriculum data
+        // Fetch tracks and find current project (sequential flow)
+        const tracks = await curriculumApi.getTracks()
         const userTrackCode = profileResponse.data?.track
         
         if (userTrackCode && tracks.length > 0) {
-          // Find user's assigned track
+          // Find the user's specific track - DO NOT default to tracks[0]
           const userTrack = tracks.find(t => t.code === userTrackCode)
-          const track = userTrack || tracks[0]
           
-          if (track) {
-            setCurrentTrack(track)
-            setTotalProjects(track.projects.length)
-            setCompletedProjects(track.projects.filter(p => p.progress_percentage === 100).length)
+          if (userTrack) {
+            setCurrentTrack(userTrack)
+            setTotalProjects(userTrack.projects.length)
+            setCompletedProjects(userTrack.projects.filter(p => p.progress_percentage === 100).length)
             
-            // Find current project
-            const inProgressProject = track.projects.find(
-              p => p.progress_percentage > 0 && p.progress_percentage < 100
+            // SEQUENTIAL FLOW: Find first unlocked, not-completed project
+            const currentActiveProject = userTrack.projects.find(
+              p => p.is_unlocked && p.progress_percentage < 100
             )
-            const unlockedProject = track.projects.find(p => p.is_unlocked)
-            const project = inProgressProject || unlockedProject || track.projects[0]
+            
+            // If no active project, show first unlocked one
+            const project = currentActiveProject || userTrack.projects.find(p => p.is_unlocked) || userTrack.projects[0]
             
             setCurrentProject(project)
             
-            // Fetch GitHub commits asynchronously (non-blocking)
             if (project?.github_repo_url) {
-              // Don't await - let it load in background
               fetchGithubCommits(project.github_repo_url)
             }
+          } else {
+            console.error(`Track ${userTrackCode} not found in available tracks`)
           }
         }
       } catch (error) {
@@ -424,18 +421,6 @@ export default function StudentDashboardPage() {
         </div>
       )}
 
-      {/* Tool Cards Section */}
-      {!loading && userTrack && (
-        <ToolCardsSection
-          track={userTrack}
-          currentProjectNumber={currentProject?.number || 1}
-          supersetUrl={toolUrls.superset}
-          prefectUrl={toolUrls.prefect}
-          jupyterUrl={toolUrls.jupyter}
-          workspaceUrl={toolUrls.workspace}
-        />
-      )}
-
       {/* Main grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* All Projects Overview */}
@@ -466,8 +451,9 @@ export default function StudentDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {currentTrack && currentTrack.projects.length > 0 ? (
-              currentTrack.projects.map((project, index) => {
+            {currentTrack && currentProject ? (
+              // SEQUENTIAL FLOW: Show only current project
+              [currentProject].map((project, index) => {
                 const isCompleted = project.progress_percentage === 100
                 const isInProgress = project.progress_percentage > 0 && project.progress_percentage < 100
                 const isLocked = !project.is_unlocked

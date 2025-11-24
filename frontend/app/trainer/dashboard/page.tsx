@@ -165,14 +165,14 @@ export default function TrainerDashboardPage() {
               variant="outline" 
               className="justify-start h-auto py-4 border-2 hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all"
             >
-              <Link href="/trainer/schedule">
+              <Link href="/trainer/sessions">
                 <div className="flex items-center gap-3 w-full">
                   <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
                     <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold">Schedule Sessions</div>
-                    <div className="text-sm text-muted-foreground">Manage meetings and calls</div>
+                    <div className="font-semibold">Live Sessions</div>
+                    <div className="text-sm text-muted-foreground">Schedule & manage classes</div>
                   </div>
                 </div>
               </Link>
@@ -183,14 +183,14 @@ export default function TrainerDashboardPage() {
               variant="outline" 
               className="justify-start h-auto py-4 border-2 hover:border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all"
             >
-              <Link href="/trainer/messages">
+              <Link href="/trainer/support">
                 <div className="flex items-center gap-3 w-full">
                   <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/50">
                     <MessageCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold">Messages</div>
-                    <div className="text-sm text-muted-foreground">Communicate with students</div>
+                    <div className="font-semibold">Support Tickets</div>
+                    <div className="text-sm text-muted-foreground">Help students with issues</div>
                   </div>
                 </div>
               </Link>
